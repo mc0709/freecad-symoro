@@ -152,7 +152,7 @@ class SymoroWorkbench(Workbench):
 
     def Initialize(self):
         import importSymoro
-        importSymoro.createGeometry()
+        #importSymoro.createGeometry()
                                         
     def Activated(self):
         pass
