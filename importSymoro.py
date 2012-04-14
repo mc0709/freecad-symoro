@@ -61,6 +61,22 @@ table_rx90 = (
         0, 0, -pi/2, 0, 0, 0)
         )
 
+table_stanford = (
+    # antecedant, mu, sigma,
+    #   gamma, b, alpha, d, theta, r
+    (0, 1, revolute_joint_type,
+        0, 0, 0, 0, 0, 0),
+    (1, 1, revolute_joint_type,
+        0, 0, -pi/2, 0, 0, 200),
+    (2, 1, prismatic_joint_type,
+        0, 0, pi/2, 0, 0, 400),
+    (3, 1, revolute_joint_type,
+        0, 0, 0, 0, 0, 0),
+    (4, 1, revolute_joint_type,
+        0, 0, -pi/2, 0, 0, 0),
+    (5, 1, revolute_joint_type,
+        0, 0, pi/2, 0, 0, 0)
+    )
 # Parameters for the graphical representation
 d_rev = 20
 l_rev = 200
@@ -70,7 +86,7 @@ d_body = 5
 
 class Mechanism():
     def __init__(self, feature):
-        self.kinematics = Kinematics(table_rx90)
+        self.kinematics = Kinematics(table_stanford)
         self.qstr = ['q{0}'.format(i+1) for i in range(len(self.kinematics.ajoints))]
         add_rev = lambda s: feature.addProperty("App::PropertyAngle",
                 s, "Joint Values", s)
@@ -104,15 +120,16 @@ class Mechanism():
         for jnt in self.kinematics.joints:
             m, Pjminus1 = self.kinematics.get_joint_transform(jnt)
             Pj = Base.Vector(m.A14, m.A24, m.A34)
-            print((Pjminus1, Pj))
             v = Pj - Pjminus1
             if (v.Length > 0):
                 body_shape = Part.makeCylinder(d_body, v.Length, Pjminus1, v)
                 comp.add(body_shape)
             if (jnt.isrevolute()):
-                joint_shape = Part.makeCylinder(d_rev, l_rev, Base.Vector(0, 0, -l_rev/2))
+                joint_shape = Part.makeCylinder(d_rev, l_rev,
+                        Base.Vector(0, 0, -l_rev / 2))
             elif (jnt.isprismatic()):
-                joint_shape = Part.makeBox(d_prism, d_prism, l_prism, Base.Vector(0, 0, -l_prism/2))
+                joint_shape = Part.makeBox(d_prism, d_prism, l_prism,
+                        Base.Vector(-d_prism / 2, -d_prism / 2, -l_prism / 2))
             if not(jnt.isfixed()):
                 joint_shape.Matrix = m
                 comp.add(joint_shape)
