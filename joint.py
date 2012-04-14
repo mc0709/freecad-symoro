@@ -46,6 +46,7 @@ class Joint:
         q: float, optional
             Current joint value.
         """
+        self.j = kwargs.get('j')
         self.antc = kwargs.get('antc')
         self.mu = kwargs.get('mu')
         self.sigma = kwargs.get('sigma')
@@ -59,6 +60,9 @@ class Joint:
         self.qmax = kwargs.get('qmax', None)
         self.qinit = kwargs.get('qinit', 0)
         self.q = kwargs.get('q', 0)
+
+    def __str__(self):
+        return str(self.j)
 
     def ispassive(self):
         return (self.mu == 0)
@@ -75,7 +79,7 @@ class Joint:
     def isfixed(self):
         return (self.sigma == 2)
 
-    def get_transform(self):
+    def get_transform_antc(self):
         """Return the transform from the antecedant joint"""
         if self.isrevolute():
             theta = self.theta + self.q
@@ -95,25 +99,25 @@ class Joint:
         cg = cos(self.gamma)
         sg = sin(self.gamma)
 
-        T11 = ct * cg - sg * ca * st
-        T12 = sg * ct + cg * ca * st
-        T13 = sa * st
-        T14 = 0
-        T21 = -cg * st - sg * ca * ct
+        T11 = cg * ct - sg * ca * st
+        T12 = -cg * st - sg * ca * ct
+        T13 = sg * sa
+        T14 = self.d * cg + r * sg * sa
+        T21 = sg * ct + cg * ca * st
         T22 = -sg * st + cg * ca * ct
-        T23 = sa * ct
-        T24 = 0
-        T31 = sa * sg
-        T32 = -cg * sa
+        T23 = -cg * sa
+        T24 = self.d * sg - r * cg * sa
+        T31 = sa * st
+        T32 = sa * ct
         T33 = ca
-        T34 = 0
-        T41 = self.d * cg + r * sg * sa
-        T42 = self.d * sg - r * cg * sa
-        T43 = r * ca + self.b
+        T34 = r * ca + self.b
+        T41 = 0
+        T42 = 0
+        T43 = 0
         T44 = 1
-        T = [[T11, T21, T31, T41],
-                [T12, T22, T32, T42],
-                [T13, T23, T33, T43],
-                [T14, T24, T34, T44]]
+        T = [[T11, T12, T13, T14],
+             [T21, T22, T23, T24],
+             [T31, T32, T33, T34],
+             [T41, T42, T43, T44]]
         return T
 
