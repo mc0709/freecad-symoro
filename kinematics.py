@@ -36,10 +36,56 @@ def table_ok(table):
     sorted_table = sorted(table, cmp=cmp_antc)
     return (sorted_table == list(table))
 
+def Ttomatrix(T):
+    from FreeCAD import Base
+    l = T[0] + T[1] + T[2] + T[3]
+    return Base.Matrix(*l)
+
+def get_joints_from_table(table):
+    joints = []
+    if not(table_ok):
+        raise ValueError('Antecedants should be sorted in the table')
+    for j, row in enumerate(table):
+        if (row[0] == 0):
+            antc = None
+        else:
+            antc = joints[row[0] - 1]
+        jnt = Joint(
+                j=j,
+                antc=antc,
+                mu=row[1],
+                sigma=row[2],
+                gamma=row[3],
+                b=row[4],
+                alpha=row[5],
+                d=row[6],
+                theta=row[7],
+                r=row[8],
+                )
+        joints.append(jnt)
+    # TODO: add recursion detection for antecedants
+    return joints
+
 class Kinematics():
-    def __init__(self, table):
+    def __init__(self, table, base_t=None, tool_t=None):
         self.table = table
-        self.joints = self.get_joints_from_table(self.table)
+        if base_t is None:
+            self.base_t = [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1]]
+        else:
+            self.base_t = base_t
+        if tool_t is None:
+            self.tool_t = [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1]]
+        else:
+            self.tool_t = tool_t
+        self.joints = get_joints_from_table(self.table)
         # List of actuated joints
         self.ajoints = self.get_ajoints()
         # List of passive joints
@@ -49,31 +95,7 @@ class Kinematics():
         # Passive joints' variables
         self.qp = self.get_qp()
         # Chains
-        self.chains = Chain(self.joints)
-
-    def get_joints_from_table(self, table):
-        joints = []
-        if not(table_ok):
-            raise ValueError('Antecedants should be sorted in the table')
-        for row in table:
-            if (row[0] == 0):
-                antc = None
-            else:
-                antc = joints[row[0] - 1]
-            jnt = Joint(
-                    antc=antc,
-                    mu=row[1],
-                    sigma=row[2],
-                    gamma=row[3],
-                    b=row[4],
-                    alpha=row[5],
-                    d=row[6],
-                    theta=row[7],
-                    r=row[8],
-                    )
-            joints.append(jnt)
-        # TODO: add recursion detection for antecedants
-        return joints
+        self.chain = Chain(self.joints)
 
     def get_ajoints(self):
         """Return the list of active joints, always in the same order"""
@@ -120,4 +142,26 @@ class Kinematics():
         except (AttributeError, TypeError):
             for i in index:
                 self.pjoints[i].q = q[i]
+
+    def get_joint_transform(self, joint):
+        """Return the transform from base to joint
+
+        Return a tuple (m, Pjminus1), where m is the transformation
+        matrix from base (not base joint) to the joint, and Pjminus1 is the
+        position of previous joint.
+        """
+        # Get the list of joints from base to joint
+
+        # The transform from the base to the base joint is given by
+        # self.base_t.
+        l = self.base_t[0] + self.base_t[1] + self.base_t[2] + self.base_t[3]
+        from FreeCAD import Base
+        m = Base.Matrix(*l)
+        Pj = Base.Vector(0, 0, 0)
+        for jnt in self.chain.get_subchain_to(joint):
+            # Pjminus1 is Pj from the step before
+            Pjminus1 = Pj
+            m *= Ttomatrix(jnt.get_transform_antc())
+            Pj = Base.Vector(m.A14, m.A24, m.A34)
+        return m, Pjminus1
 

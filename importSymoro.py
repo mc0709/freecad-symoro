@@ -44,6 +44,23 @@ table1 = (
         0, 0, 0, 50, pi/2, 0),
     )
 
+table_rx90 = (
+    # antecedant, mu, sigma,
+    #   gamma, b, alpha, d, theta, r
+    (0, 1, revolute_joint_type,
+        0, 0, 0, 0, 0, 0),
+    (1, 1, revolute_joint_type,
+        0, 0, pi/2, 0, 0, 0),
+    (2, 1, revolute_joint_type,
+        0, 0, 0, 300, 0, 0),
+    (3, 1, revolute_joint_type,
+        0, 0, -pi/2, 0, 0, 400),
+    (4, 1, revolute_joint_type,
+        0, 0, pi/2, 0, 0, 0),
+    (5, 1, revolute_joint_type,
+        0, 0, -pi/2, 0, 0, 0)
+        )
+
 # Parameters for the graphical representation
 d_rev = 20
 l_rev = 200
@@ -51,13 +68,9 @@ d_prism = 20
 l_prism = 200
 d_body = 5
 
-def Ttomatrix(T):
-    l = T[0] + T[1] + T[2] + T[3]
-    return Base.Matrix(*l)
-
 class Mechanism():
     def __init__(self, feature):
-        self.kinematics = Kinematics(table1)
+        self.kinematics = Kinematics(table_rx90)
         self.qstr = ['q{0}'.format(i+1) for i in range(len(self.kinematics.ajoints))]
         add_rev = lambda s: feature.addProperty("App::PropertyAngle",
                 s, "Joint Values", s)
@@ -88,16 +101,13 @@ class Mechanism():
 
     def createShape(self, feature):
         comp = Part.Compound([])
-        Pjminus1 = Base.Vector(0, 0, 0)
-        m = Base.Matrix()
         for jnt in self.kinematics.joints:
-            m *= Ttomatrix(jnt.get_transform())
+            m, Pjminus1 = self.kinematics.get_joint_transform(jnt)
             Pj = Base.Vector(m.A14, m.A24, m.A34)
+            print((Pjminus1, Pj))
             v = Pj - Pjminus1
             if (v.Length > 0):
                 body_shape = Part.makeCylinder(d_body, v.Length, Pjminus1, v)
-                #body_obj = doc.addObject('Part::Feature', 'Body{0}'.format(i))
-                #body_obj.Shape = body_shape
                 comp.add(body_shape)
             if (jnt.isrevolute()):
                 joint_shape = Part.makeCylinder(d_rev, l_rev, Base.Vector(0, 0, -l_rev/2))
@@ -105,8 +115,6 @@ class Mechanism():
                 joint_shape = Part.makeBox(d_prism, d_prism, l_prism, Base.Vector(0, 0, -l_prism/2))
             if not(jnt.isfixed()):
                 joint_shape.Matrix = m
-                #joint_obj = doc.addObject('Part::Feature', 'Joint{0}'.format(i))
-                #joint_obj.Shape = joint_shape
                 comp.add(joint_shape)
             Pjminus1 = Pj
         feature.Shape = comp
