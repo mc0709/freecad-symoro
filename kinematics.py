@@ -37,8 +37,9 @@ def table_ok(table):
     return (sorted_table == list(table))
 
 def Ttomatrix(T):
+    # TODO: remove FreeCAD dependency from this module
     from FreeCAD import Base
-    l = T[0] + T[1] + T[2] + T[3]
+    l = T.flatten().tolist()
     return Base.Matrix(*l)
 
 def get_joints_from_table(table):
@@ -161,7 +162,7 @@ class Kinematics():
         for jnt in self.chain.get_subchain_to(joint):
             # Pjminus1 is Pj from the step before
             Pjminus1 = Pj
-            m *= Ttomatrix(jnt.get_transform_antc())
+            m *= Ttomatrix(jnt.T)
             Pj = Base.Vector(m.A14, m.A24, m.A34)
         return m, Pjminus1
 

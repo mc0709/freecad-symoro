@@ -25,7 +25,7 @@ __title__ = "FreeCAD Symoro+ Workbench - Joint"
 __author__ = "Gael Ecorchard <galou_breizh@yahoo.fr>"
 __url__ = ["http://free-cad.sourceforge.net"]
 
-class Joint:
+class Joint(object):
     def __init__(self, **kwargs):
         """
         Parameters
@@ -56,10 +56,82 @@ class Joint:
         self.d = kwargs.get('d')
         self.theta = kwargs.get('theta')
         self.r = kwargs.get('r')
-        self.qmin = kwargs.get('qmin', None)
-        self.qmax = kwargs.get('qmax', None)
+        self._qmin = kwargs.get('qmin', -0.5)
+        self._qmax = kwargs.get('qmax', 0.5)
         self.qinit = kwargs.get('qinit', 0)
-        self.q = kwargs.get('q', 0)
+        self._q = kwargs.get('q', 0)
+        import numpy as np
+        self._T = np.identity(4)
+        # A list that holds previous parameter values, so that a change will
+        # be seen and _T will be updated.
+        self._prev_params = []
+
+    @property
+    def q(self):
+        """The joint value"""
+        return self._q
+
+    @q.setter
+    def q(self, value):
+        if not(self.qmin is None):
+            if (value < self.qmin):
+                value = self.qmin
+        if not(self.qmax is None):
+            if (value > self.qmax):
+                value = self.qmax
+        self._q = value
+        self._set_transform_antc()
+
+    @property
+    def T(self):
+        """The homogeneous transformation matrix from the antecedant joint"""
+        # Recompute _T if needed
+        new_params = [
+                self.mu,
+                self.sigma,
+                self.gamma,
+                self.b,
+                self.alpha,
+                self.d,
+                self.theta,
+                self.r,
+                ]
+        if (self._prev_params != new_params):
+            self._prev_params = new_params
+            self._set_transform_antc()
+        return self._T
+
+    @property
+    def qmin(self):
+        """The minimal value allowed for q"""
+        return self._qmin
+
+    @qmin.setter
+    def qmin(self, value):
+        if (value is None):
+            self._qmin = None
+            return
+        if (value > self.qmax):
+            value = self.qmax
+        self._qmin = value
+        if (self.q < value):
+            self.q = value
+
+    @property
+    def qmax(self):
+        """The maximal value allowed for q"""
+        return self._qmax
+
+    @qmax.setter
+    def qmax(self, value):
+        if (value is None):
+            self._qmax = None
+            return
+        if (value < self.qmin):
+            value = self.qmin
+        self._qmax = value
+        if (self.q > value):
+            self.q = value
 
     def __str__(self):
         return str(self.j)
@@ -79,8 +151,8 @@ class Joint:
     def isfixed(self):
         return (self.sigma == 2)
 
-    def get_transform_antc(self):
-        """Return the transform from the antecedant joint"""
+    def _set_transform_antc(self):
+        """Modify the transform from the antecedant joint"""
         if self.isrevolute():
             theta = self.theta + self.q
             r = self.r
@@ -99,25 +171,16 @@ class Joint:
         cg = cos(self.gamma)
         sg = sin(self.gamma)
 
-        T11 = cg * ct - sg * ca * st
-        T12 = -cg * st - sg * ca * ct
-        T13 = sg * sa
-        T14 = self.d * cg + r * sg * sa
-        T21 = sg * ct + cg * ca * st
-        T22 = -sg * st + cg * ca * ct
-        T23 = -cg * sa
-        T24 = self.d * sg - r * cg * sa
-        T31 = sa * st
-        T32 = sa * ct
-        T33 = ca
-        T34 = r * ca + self.b
-        T41 = 0
-        T42 = 0
-        T43 = 0
-        T44 = 1
-        T = [[T11, T12, T13, T14],
-             [T21, T22, T23, T24],
-             [T31, T32, T33, T34],
-             [T41, T42, T43, T44]]
-        return T
+        self._T[0, 0] = cg * ct - sg * ca * st
+        self._T[0, 1] = -cg * st - sg * ca * ct
+        self._T[0, 2] = sg * sa
+        self._T[0, 3] = self.d * cg + r * sg * sa
+        self._T[1, 0] = sg * ct + cg * ca * st
+        self._T[1, 1] = -sg * st + cg * ca * ct
+        self._T[1, 2] = -cg * sa
+        self._T[1, 3] = self.d * sg - r * cg * sa
+        self._T[2, 0] = sa * st
+        self._T[2, 1] = sa * ct
+        self._T[2, 2] = ca
+        self._T[2, 3] = r * ca + self.b
 

@@ -122,15 +122,16 @@ class Mechanism():
             self.createShape(feature)
 
     def execute(self, feature):
+        self.set_joint_values(feature)
         self.createShape(feature)
 
     def set_joint_values(self, feature):
-        q = [feature.getPropertyByName(s) for s in self.qstr]
-        self.kinematics.set_q(q)
-        for jnt in self.kinematics.joints:
+        qlist = [feature.getPropertyByName(s) for s in self.qstr]
+        for jnt, q in zip(self.kinematics.ajoints, qlist):
             if (jnt.isrevolute()):
                 from math import pi
-                jnt.q *= pi / 180
+                q *= pi / 180
+            jnt.q = q
 
     def createShape(self, feature):
         comp = Part.Compound([])
