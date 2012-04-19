@@ -56,8 +56,8 @@ class Joint(object):
         self.d = kwargs.get('d')
         self.theta = kwargs.get('theta')
         self.r = kwargs.get('r')
-        self._qmin = kwargs.get('qmin', -0.5)
-        self._qmax = kwargs.get('qmax', 0.5)
+        self._qmin = kwargs.get('qmin', None)
+        self._qmax = kwargs.get('qmax', None)
         self.qinit = kwargs.get('qinit', 0)
         self._q = kwargs.get('q', 0)
         import numpy as np
