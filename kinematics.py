@@ -51,21 +51,55 @@ def get_joints_from_table(table):
             antc = None
         else:
             antc = joints[row[0] - 1]
+        if (row[1] == 0):
+            sameas = None
+        else:
+            sameas = joints[row[1] - 1]
         jnt = Joint(
-                j=j,
+                j=j + 1,
                 antc=antc,
-                mu=row[1],
-                sigma=row[2],
-                gamma=row[3],
-                b=row[4],
-                alpha=row[5],
-                d=row[6],
-                theta=row[7],
-                r=row[8],
+                sameas=sameas,
+                mu=row[2],
+                sigma=row[3],
+                gamma=row[4],
+                b=row[5],
+                alpha=row[6],
+                d=row[7],
+                theta=row[8],
+                r=row[9],
                 )
         joints.append(jnt)
     # TODO: add recursion detection for antecedants
     return joints
+
+def get_looproot(joints, joint):
+    """Return the loop root for loop ending at joint
+
+    Argument 2, joint, must be the end joint with non-None sameas attribute.
+    The loop root is the last common joints of the two subchains ending at,
+    respectively joint and joint.sameas.
+    """
+    chain = Chain(joints)
+    subchain1 = chain.get_subchain_to(joint)
+    subchain2 = chain.get_subchain_to(joint.sameas)
+
+    for jnt in subchain2[::-1]:
+        if (jnt in subchain1):
+            return jnt
+    return None
+
+def get_loops(joints):
+    ends = []
+    roots = []
+    for jnt in joints:
+        # If jnt's sameas attribute is another joint and that this latter is
+        # not already in the list of end joints, add jnt.
+        end = jnt.sameas
+        if (not(end is None) and
+                not(end in ends)):
+            ends.append(end)
+            roots.append(get_looproot(joints, jnt))
+    return zip(roots, ends)
 
 class Kinematics():
     def __init__(self, table, base_t=None, tool_t=None):
@@ -97,6 +131,11 @@ class Kinematics():
         self.qp = self.get_qp()
         # Chains
         self.chain = Chain(self.joints)
+        # Tuples (root, end) for each loop
+        self.loops = get_loops(self.joints)
+        # List of loop solvers
+        from loop_solver import LoopSolver
+        self.loopsolvers = [LoopSolver(self.joints, *l) for l in self.loops]
 
     def get_ajoints(self):
         """Return the list of active joints, always in the same order"""
@@ -113,6 +152,13 @@ class Kinematics():
             if (jnt.ispassive()):
                 pjoints.append(jnt)
         return pjoints
+
+    def get_cjoints(self):
+        """Return the list of cut joints, always in the same order"""
+        cjoints = []
+        for jnt in self.joints:
+            if not(jnt.sameas is None):
+                cjoints.append(jnt)
 
     def get_q(self, index=None):
         if (index is None):
@@ -165,4 +211,8 @@ class Kinematics():
             m *= Ttomatrix(jnt.T)
             Pj = Base.Vector(m.A14, m.A24, m.A34)
         return m, Pjminus1
+
+    def solve_loops(self):
+        for ls in self.loopsolvers:
+            ls.solve()
 

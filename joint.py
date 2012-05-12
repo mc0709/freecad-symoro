@@ -48,6 +48,7 @@ class Joint(object):
         """
         self.j = kwargs.get('j')
         self.antc = kwargs.get('antc')
+        self.sameas = kwargs.get('sameas', None)
         self.mu = kwargs.get('mu')
         self.sigma = kwargs.get('sigma')
         self.gamma = kwargs.get('gamma')
@@ -136,12 +137,6 @@ class Joint(object):
     def __str__(self):
         return str(self.j)
 
-    def ispassive(self):
-        return (self.mu == 0)
-
-    def isactuated(self):
-        return (self.mu == 1)
-
     def isrevolute(self):
         return (self.sigma == 0)
 
@@ -150,6 +145,15 @@ class Joint(object):
 
     def isfixed(self):
         return (self.sigma == 2)
+
+    def ismoving(self):
+        return not(self.isfixed())
+
+    def ispassive(self):
+        return (self.ismoving and (self.mu == 0))
+
+    def isactuated(self):
+        return (self.ismoving and (self.mu == 1))
 
     def _set_transform_antc(self):
         """Modify the transform from the antecedant joint"""

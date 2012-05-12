@@ -1,17 +1,13 @@
 #!/usr/bin/python
 # -*- encoding: utf-8 -*-
 
-def get_bases(joints):
-    """Return the base joints, i.e. joints without antecedant"""
-    bases = []
-    base_found = False
+def get_base(joints):
+    """Return the base joint, i.e. joints without antecedant"""
+    base = None
     for jnt in joints:
-        if jnt.antc is None:
-            base_found = True
-            bases.append(jnt)
-    if not(base_found):
-        raise ValueError('No base is defined')
-    return bases
+        if not(jnt.antc in joints):
+            base = jnt
+    return base
 
 def get_tools(joints):
     """Return the end joints, i.e. joints that are antecedant of nothing"""
@@ -29,16 +25,27 @@ def is_unique_child(joint, joints):
     antc = [jnt.antc for jnt in joints]
     return (antc.count(joint.antc) == 1)
 
+def get_subchain_to(joint, joints):
+    """Return the subchain ending at joint"""
+    if not(joint.antc in joints):
+        return [joint]
+    l = []
+    l.extend(get_subchain_to(joint=joint.antc, joints=joints))
+    l.append(joint)
+    return l
+
 class Chain(object):
     def __init__(self, joints):
         self.joints = joints
-        self._bases = get_bases(joints)
+        self._base = get_base(joints)
+        if self._base is None:
+            raise ValueError('Chain has no base joint')
         self._tools = get_tools(joints)
 
     @property
-    def bases(self):
-        """The base joints, i.e. joints without antecedant"""
-        return self._bases
+    def base(self):
+        """The base joint, i.e. joints without antecedant"""
+        return self._base
 
     @property
     def tools(self):
@@ -59,17 +66,18 @@ class Chain(object):
 
     def get_subchain_to(self, joint):
         """Return the subchain ending at joint"""
-        if (joint in self.bases):
-            return [joint]
-        l = []
-        l.extend(self.get_subchain_to(joint.antc))
-        l.append(joint)
-        return l
+        return get_subchain_to(joint=joint, joints=self.joints)
 
     def get_chain(self):
-        if (len(self.bases) > 1):
-            return ValueError('No PKM supported yet')
-        base = self.bases[0]
-        return [self.bases, self.get_subchain(base)]
+        return self.get_subchain_from(self.base)
+
+    def get_mjoints(self):
+        """Return a list of non-fixed joints"""
+        mjoints = []
+        for jnt in self.joints:
+            if jnt.ismoving():
+                mjoints.append(jnt)
+        return mjoints
+
 
 

@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 from joint import Joint
 from chain import Chain
 from chain import get_children
@@ -27,7 +30,7 @@ joints = [jnt1, jnt2, jnt3]
 
 chain = Chain(joints)
 #print([chain.get_subchain_from(jnt) for jnt in get_children(joints, jnt1)])
-assert(chain.bases == [jnt1])
+assert(chain.base == jnt1)
 assert(chain.tools == [jnt3])
 assert(get_children(joints, jnt1) == [jnt2])
 assert(get_children(joints, jnt2) == [jnt3])
@@ -40,7 +43,7 @@ assert(chain.get_subchain_to(jnt3) == [jnt1, jnt2, jnt3])
 
 joints = [jnt1, jnt2, jnt3, jnt4]
 chain = Chain(joints)
-assert(chain.bases == [jnt1])
+assert(chain.base == jnt1)
 assert(chain.tools == [jnt3, jnt4])
 assert(get_children(joints, jnt1) == [jnt2])
 assert(get_children(joints, jnt2) == [jnt3, jnt4])
@@ -58,4 +61,14 @@ assert(chain.get_subchain_from(jnt1) == [jnt1, jnt2, [[jnt3], [jnt4, jnt5]]])
 assert(chain.get_subchain_to(jnt3) == [jnt1, jnt2, jnt3])
 assert(chain.get_subchain_to(jnt4) == [jnt1, jnt2, jnt4])
 assert(chain.get_subchain_to(jnt5) == [jnt1, jnt2, jnt4, jnt5])
+
+# Closed-loop mechanism
+jnt1 = Joint(antc=None, **dummy_jnt_parameters)
+jnt2 = Joint(antc=jnt1, **dummy_jnt_parameters)
+jnt3 = Joint(antc=jnt1, **dummy_jnt_parameters)
+jnt4 = Joint(antc=jnt2, **dummy_jnt_parameters)
+jnt5 = Joint(antc=jnt3, sameas=jnt4, **dummy_jnt_parameters)
+chain = Chain([jnt1, jnt2, jnt3, jnt4, jnt5])
+assert(chain.get_subchain_to(jnt4) == [jnt1, jnt2, jnt4])
+assert(chain.get_subchain_to(jnt5) == [jnt1, jnt3, jnt5])
 

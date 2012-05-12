@@ -29,71 +29,8 @@ import FreeCAD
 from FreeCAD import Base, Part
 from kinematics import Kinematics
 
-revolute_joint_type = 0
-prismatic_joint_type = 1
-fixed_joint_type = 2
-from math import pi
-table1 = (
-    # antecedant, mu, sigma,
-    #   gamma, b, alpha, d, theta, r
-    (0, 1, revolute_joint_type,
-        0, 0, 100, 0, 50, 0),
-    (1, 1, prismatic_joint_type,
-        0, 0, 100, 1, 50, 0.5),
-    (2, 1, revolute_joint_type,
-        0, 0, 0, 50, pi/2, 0),
-    )
+from robots import table_sr400 as table
 
-table_tree = (
-    # antecedant, mu, sigma,
-    #   gamma, b, alpha, d, theta, r
-    (0, 1, revolute_joint_type,
-        0, 0, 0, 0, 50, 0),
-    (1, 1, revolute_joint_type,
-        0, 0, 1, 300, 0.5, 50),
-    (2, 1, revolute_joint_type,
-        0, 0, 0, 200, pi/2, 0),
-    (3, 1, revolute_joint_type,
-        0, 0, 0, 100, pi/2, 0),
-    (2, 1, revolute_joint_type,
-        1, 0, 0, 300, -pi/2, 0),
-    (5, 1, revolute_joint_type,
-        0, 0, 0, 100, pi/2, 0),
-    )
-
-table_rx90 = (
-    # antecedant, mu, sigma,
-    #   gamma, b, alpha, d, theta, r
-    (0, 1, revolute_joint_type,
-        0, 0, 0, 0, 0, 0),
-    (1, 1, revolute_joint_type,
-        0, 0, pi/2, 0, 0, 0),
-    (2, 1, revolute_joint_type,
-        0, 0, 0, 300, 0, 0),
-    (3, 1, revolute_joint_type,
-        0, 0, -pi/2, 0, 0, 400),
-    (4, 1, revolute_joint_type,
-        0, 0, pi/2, 0, 0, 0),
-    (5, 1, revolute_joint_type,
-        0, 0, -pi/2, 0, 0, 0)
-        )
-
-table_stanford = (
-    # antecedant, mu, sigma,
-    #   gamma, b, alpha, d, theta, r
-    (0, 1, revolute_joint_type,
-        0, 0, 0, 0, 0, 0),
-    (1, 1, revolute_joint_type,
-        0, 0, -pi/2, 0, 0, 200),
-    (2, 1, prismatic_joint_type,
-        0, 0, pi/2, 0, 0, 400),
-    (3, 1, revolute_joint_type,
-        0, 0, 0, 0, 0, 0),
-    (4, 1, revolute_joint_type,
-        0, 0, -pi/2, 0, 0, 0),
-    (5, 1, revolute_joint_type,
-        0, 0, pi/2, 0, 0, 0)
-    )
 # Parameters for the graphical representation
 d_rev = 20
 l_rev = 200
@@ -103,7 +40,7 @@ d_body = 5
 
 class Mechanism():
     def __init__(self, feature):
-        self.kinematics = Kinematics(table_tree)
+        self.kinematics = Kinematics(table)
         self.qstr = ['q{0}'.format(i+1) for i in range(len(self.kinematics.ajoints))]
         add_rev = lambda s: feature.addProperty("App::PropertyAngle",
                 s, "Joint Values", s)
@@ -119,10 +56,12 @@ class Mechanism():
     def onChanged(self, feature, prop):
         if prop.startswith('q'):
             self.set_joint_values(feature)
+            self.kinematics.solve_loops()
             self.createShape(feature)
 
     def execute(self, feature):
         self.set_joint_values(feature)
+        self.kinematics.solve_loops()
         self.createShape(feature)
 
     def set_joint_values(self, feature):
