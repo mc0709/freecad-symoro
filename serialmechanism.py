@@ -25,7 +25,15 @@ __title__ = "FreeCAD Symoro+ Workbench - SerialMechanism"
 __author__ = "Gael Ecorchard <galou_breizh@yahoo.fr>"
 __url__ = ["http://free-cad.sourceforge.net"]
 
-import numpy as np
+import numpy.matlib as matlib
+
+def n_pjoints(joints):
+    """Return the number of passive joints"""
+    n = 0
+    for jnt in joints:
+        if jnt.ispassive():
+            n += 1
+    return n
 
 def end_transform(joints):
     """Return the homogeneous transformation matrix of the whole serial chain
@@ -33,7 +41,7 @@ def end_transform(joints):
     Return the homogeneous transformation matrix of the whole serial chain as
     numpy.matrix.
     """
-    T = np.matrix(np.identity(4))
+    T = matlib.identity(4)
     for jnt in joints:
         T *= jnt.T
     return T

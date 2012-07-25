@@ -26,10 +26,12 @@ __author__ = "Gael Ecorchard <galou_breizh@yahoo.fr>"
 __url__ = ["http://free-cad.sourceforge.net"]
 
 def remove_upto_root(chain, root):
-    """Remove all joints before root in a chain"""
+    """Remove all joints before root and root itself in a chain"""
     for jnt in chain:
         if not(jnt is root):
             chain.pop(0)
+        else:
+            break
     # Also remove root
     chain.pop(0)
 
@@ -51,8 +53,8 @@ def frame_diff(T1, T2):
     # TODO: write (find?) a module for homogeneous transforms
     # Transpose of the rotational part of T1
     Rt = T1[0:3, 0:3].transpose()
-    from numpy import matrix, identity
-    invT1 = matrix(identity(4))
+    from numpy.matlib import identity
+    invT1 = identity(4)
     invT1[0:3, 0:3] = Rt
     invT1[0:3, 3] = -Rt * T1[0:3, 3]
     # Transform from 1 to 2
@@ -76,6 +78,7 @@ def frame_diff(T1, T2):
             (sy - nx) ** 2)
     theta = atan2(sin_theta, cos_theta)
 
+    from numpy import matrix
     if abs(sin_theta) < 1e-8:
         u = matrix([0.0, 0.0, 1.0]).transpose()
     else:
@@ -84,8 +87,8 @@ def frame_diff(T1, T2):
             (sy - nx) / (2 * sin_theta)]).transpose()
     drot = theta * u
 
-    from numpy import zeros
-    dx = matrix(zeros(6)).transpose()
+    from numpy.matlib import zeros
+    dx = zeros((6, 1))
     dx[0:3] = dtrans
     dx[3:6] = drot
     return dx
@@ -200,26 +203,27 @@ class LoopSolver():
         return dx
 
     def get_cjoint_jac(self):
-        from numpy import matrix, zeros
+        from numpy.matlib import zeros
         from jacobians import serialKinematicJacobianPassive as jacobian
 
-        n_loops = len(self.chains)
-        n_pjoints = len(l_from_l_of_l(self.pjoints))
-        J = matrix(zeros((6 * (n_loops - 1), n_pjoints)))
+        n_endjoints = len(self.chains)
+        from  serialmechanism import n_pjoints
+        n_pjoints = n_pjoints(l_from_l_of_l(self.pjoints))
+        J = zeros((6 * (n_endjoints - 1), n_pjoints))
 
         # Put J0 more times in the first columns.
-        n_pjoints0 = len(self.chains[0])
         J0 = jacobian(self.chains[0])
-        for i in range(n_loops - 1):
+        n_pjoints0 = J0.shape[1]
+        for i in range(n_endjoints - 1):
             J[(6 * i):(6 * i + 6), :n_pjoints0] = J0
 
         # Put -J1, -J2, ... in the diagonal of the non-yet-filled rest part
         # of J.
         np = n_pjoints0
-        for i in range(n_loops - 1):
+        for i in range(1, n_endjoints):
             npi = len(self.chains[i])
             Ji = jacobian(self.chains[i])
-            J[(6 * i):(6 * i + 6), np:(np + npi)] = Ji
+            J[(6 * i):(6 * i + 6), np:(np + npi)] = -Ji
             np += npi
         return J
 
