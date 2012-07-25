@@ -63,17 +63,16 @@ def serialKinematicJacobian(joints):
             k += 1
     # If the last joint is fixed, apply the Jacobian transposition
     if (joints[-1].isfixed()):
-        # TODO: implement
         P = jnt.T[0:3, 3]
         jac_transposition = np.matrix(np.identity(6))
-        jac_transposition[3, 1] = -P(3)
-        jac_transposition[3, 2] = P(2)
-        jac_transposition[4, 0] = P(3)
-        jac_transposition[4, 2] = -P(1)
-        jac_transposition[5, 0] = -P(2)
-        jac_transposition[5, 1] = P(1)
+        jac_transposition[3, 1] = -P[2]
+        jac_transposition[3, 2] = P[1]
+        jac_transposition[4, 0] = P[2]
+        jac_transposition[4, 2] = -P[0]
+        jac_transposition[5, 0] = -P[1]
+        jac_transposition[5, 1] = P[0]
 
-        jacobian *= jac_transposition
+        jacobian = jac_transposition * jacobian
     return jacobian
 
 def serialKinematicJacobianPassive(joints):

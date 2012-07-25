@@ -75,24 +75,24 @@ table_sr400 = (
     # antecedant, sameas, mu, sigma,
     #   gamma, b, alpha, d, theta, r
     (0, 0, 1, revolute_joint_type,
-        0, 0, 0, 0, 0, 0),
+        0, 0, 0, 0, 0, 0), # 1
     (1, 0, 1, revolute_joint_type,
-        0, 0, -pi/2, d2, 0, 0),
+        0, 0, -pi/2, d2, 0, 0), # 2
     (2, 0, 0, revolute_joint_type,
-        0, 0, 0, d3, 0, 0),
+        0, 0, 0, d3, 0, 0), # 3
     (3, 0, 0, revolute_joint_type,
-        0, 0, -pi/2, d4, 0, rl4),
+        0, 0, -pi/2, d4, 0, rl4), # 4
     (4, 0, 1, revolute_joint_type,
-        0, 0, pi/2, 0, 0, 0),
+        0, 0, pi/2, 0, 0, 0), # 5
     (5, 0, 1, revolute_joint_type,
-        0, 0, -pi/2, 0, 0, 0),
+        0, 0, -pi/2, 0, 0, 0), # 6
     (1, 0, 1, revolute_joint_type,
-        0, 0, -pi/2, d2, 0, 0),
+        0, 0, -pi/2, d2, 0, 0), # 7
     (7, 0, 0, revolute_joint_type,
-        0, 0, 0, d8, 0, 0),
+        0, 0, 0, d8, 0, 0), # 8
     (8, 0, 0, revolute_joint_type,
-        0, 0, 0, d3, 0, 0),
+        0, 0, 0, d3, 0, 0), # 9
     (3, 9, 0, fixed_joint_type,
-        pi/2, 0, 0, -d8, 0, 0),
+        pi/2, 0, 0, -d8, 0, 0), # 10
         )
 
