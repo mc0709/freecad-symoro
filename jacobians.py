@@ -25,7 +25,6 @@ __title__ = "FreeCAD Symoro+ Workbench - jabobians"
 __author__ = "Gael Ecorchard <galou_breizh@yahoo.fr>"
 __url__ = ["http://free-cad.sourceforge.net"]
 
-import numpy as np
 
 def serialKinematicJacobian(joints):
     """Return the kinematic Jacobian of a serial chain
@@ -41,30 +40,39 @@ def serialKinematicJacobian(joints):
 
     # We need the position of last joint frame in the base joints frame
     from serialmechanism import end_transform
-    T = end_transform(chain.joints)
-    Pend = T[0:3, 3]
+    Tend = end_transform(chain.joints)
+    Pend = Tend[0:3, 3]
 
-    jacobian = np.matrix(np.zeros((6, len(chain.get_mjoints()))))
-    T = np.matrix(np.identity(4))
+    from numpy.matlib import zeros, identity, cross
+    jacobian = zeros((6, len(chain.get_mjoints())))
+    T = identity(4)
     k = 0
     for jnt in chain.joints:
         T *= jnt.T
+        P = T[0:3, 2]
         if jnt.isrevolute():
-            P = T[0:3, 3]
             DP = Pend - P
-            jacobian_trans = np.cross(P, DP, axis=0)
+            a_hat = identity(3)
+            a_hat[0, 1] = -P[2]
+            a_hat[0, 2] = P[1]
+            a_hat[1, 0] = P[2]
+            a_hat[1, 2] = -P[0]
+            a_hat[2, 0] = -P[1]
+            a_hat[2, 1] = P[0]
+            jacobian_trans = a_hat * DP
+            #jacobian_trans = cross(P, DP, axis=0)
             jacobian_rot = P
         if jnt.isprismatic():
-            jacobian_trans = T[0:3, 3]
-            jacobian_rot = np.zeros(3)
+            jacobian_trans = P
+            jacobian_rot = zeros((3, 3))
         if not(jnt.isfixed()):
             jacobian[:3, k] = jacobian_trans
             jacobian[3:, k] = jacobian_rot
             k += 1
     # If the last joint is fixed, apply the Jacobian transposition
     if (joints[-1].isfixed()):
-        P = jnt.T[0:3, 3]
-        jac_transposition = np.matrix(np.identity(6))
+        P = jnt.T[0:3, 2]
+        jac_transposition = identity(6)
         jac_transposition[3, 1] = -P[2]
         jac_transposition[3, 2] = P[1]
         jac_transposition[4, 0] = P[2]
@@ -75,6 +83,7 @@ def serialKinematicJacobian(joints):
         jacobian = jac_transposition * jacobian
     return jacobian
 
+
 def serialKinematicJacobianPassive(joints):
     """Return the kinematic Jacobian of a serial chain
 
@@ -82,9 +91,19 @@ def serialKinematicJacobianPassive(joints):
     joints are considered to be fixed. The end joint is the last joint in
     the list and the base joint is its farest antecedent.
     """
+    from copy import copy
+    from joint import ACTUATED_JOINT, FIXED_JOINT
+
+    joints = copy(joints)
+
+    for jnt in joints:
+        if jnt.ispassive():
+            jnt.sigma = ACTUATED_JOINT
+        else:
+            jnt.sigma = FIXED_JOINT
+
     # Jacobians with passive and actuated joints
     jac_all = serialKinematicJacobian(joints)
     # List of indexes of passive joints
     p_indexes = [i for i, jnt in enumerate(joints) if jnt.ispassive()]
     return jac_all[:, p_indexes]
-
