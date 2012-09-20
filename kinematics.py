@@ -28,6 +28,7 @@ __url__ = ["http://free-cad.sourceforge.net"]
 from joint import Joint
 from chain import Chain
 
+
 def table_ok(table):
     # Comparator function to order according to the antecedant index,
     # which is the first element in a joint description of the table
@@ -36,11 +37,13 @@ def table_ok(table):
     sorted_table = sorted(table, cmp=cmp_antc)
     return (sorted_table == list(table))
 
+
 def Ttomatrix(T):
     # TODO: remove FreeCAD dependency from this module
     from FreeCAD import Base
     l = T.flatten().tolist()
     return Base.Matrix(*l)
+
 
 def get_joints_from_table(table):
     joints = []
@@ -72,6 +75,7 @@ def get_joints_from_table(table):
     # TODO: add recursion detection for antecedants
     return joints
 
+
 def get_looproot(joints, joint):
     """Return the loop root for loop ending at joint
 
@@ -88,6 +92,7 @@ def get_looproot(joints, joint):
             return jnt
     return None
 
+
 def get_loops(joints):
     ends = []
     roots = []
@@ -100,6 +105,7 @@ def get_loops(joints):
             ends.append(end)
             roots.append(get_looproot(joints, jnt))
     return zip(roots, ends)
+
 
 class Kinematics():
     def __init__(self, table, base_t=None, tool_t=None):
@@ -215,4 +221,3 @@ class Kinematics():
     def solve_loops(self):
         for ls in self.loopsolvers:
             ls.solve()
-

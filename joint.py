@@ -25,6 +25,16 @@ __title__ = "FreeCAD Symoro+ Workbench - Joint"
 __author__ = "Gael Ecorchard <galou_breizh@yahoo.fr>"
 __url__ = ["http://free-cad.sourceforge.net"]
 
+# Joint types (sigma value)
+REVOLUTE_JOINT = 0
+PRISMATIC_JOINT = 1
+FIXED_JOINT = 2
+
+# Joint actuation status (mu value)
+PASSIVE_JOINT = 0
+ACTUATED_JOINT = 1
+
+
 class Joint(object):
     def __init__(self, **kwargs):
         """
@@ -138,22 +148,22 @@ class Joint(object):
         return str(self.j)
 
     def isrevolute(self):
-        return (self.sigma == 0)
+        return (self.sigma == REVOLUTE_JOINT)
 
     def isprismatic(self):
-        return (self.sigma == 1)
+        return (self.sigma == PRISMATIC_JOINT)
 
     def isfixed(self):
-        return (self.sigma == 2)
+        return (self.sigma == FIXED_JOINT)
 
     def ismoving(self):
         return not(self.isfixed())
 
     def ispassive(self):
-        return (self.ismoving and (self.mu == 0))
+        return (self.ismoving() and (self.mu == PASSIVE_JOINT))
 
     def isactuated(self):
-        return (self.ismoving and (self.mu == 1))
+        return (self.ismoving() and (self.mu == ACTUATED_JOINT))
 
     def _set_transform_antc(self):
         """Modify the transform from the antecedant joint"""
@@ -187,4 +197,3 @@ class Joint(object):
         self._T[2, 1] = sa * ct
         self._T[2, 2] = ca
         self._T[2, 3] = r * ca + self.b
-

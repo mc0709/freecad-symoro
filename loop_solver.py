@@ -25,6 +25,7 @@ __title__ = "FreeCAD Symoro+ Workbench - LoopSolver"
 __author__ = "Gael Ecorchard <galou_breizh@yahoo.fr>"
 __url__ = ["http://free-cad.sourceforge.net"]
 
+
 def remove_upto_root(chain, root):
     """Remove all joints before root and root itself in a chain"""
     for jnt in chain:
@@ -35,9 +36,11 @@ def remove_upto_root(chain, root):
     # Also remove root
     chain.pop(0)
 
+
 def l_from_l_of_l(ll):
     """Return a list from a list of lists"""
     return [item for sublist in ll for item in sublist]
+
 
 def frame_diff(T1, T2):
     """Return the difference between two frames given their transformation
@@ -93,14 +96,15 @@ def frame_diff(T1, T2):
     dx[3:6] = drot
     return dx
 
+
 class LoopSolver():
     def __init__(self, joints, root, end):
         self.joints = joints
         self.root = root
         self.end = end
-        if not(self.root_ok):
+        if not(self.root_ok()):
             raise ValueError('Root joint is not correct')
-        if not(self.end_ok):
+        if not(self.end_ok()):
             raise ValueError('End joint is not correct')
         self.end_joints = self.get_end_joints()
         self.nloops = len(self.end_joints)
@@ -116,7 +120,7 @@ class LoopSolver():
         """Check that the end joint is closing the loop"""
         # TODO: also allow that self.end has attribute sameas not None by
         # finding the joint which has sameas equal to the given end.
-        if not(self.end is None):
+        if not(self.end.sameas is None):
             return False
         check_ok = False
         for jnt in self.joints:
@@ -195,8 +199,8 @@ class LoopSolver():
         T0 = end_transform(self.chains[0])
         # The other cut joints will be used to make a difference from the
         # first cut joint.
-        from numpy import matrix, zeros
-        dx = matrix(zeros(6 * (len(self.chains) -  1))).transpose()
+        from numpy.matlib import zeros
+        dx = zeros((6 * (len(self.chains) - 1), 1))
         for k, chain in enumerate(self.chains[1:]):
             T = end_transform(chain)
             dx[(k * 6):(k * 6 + 6)] = frame_diff(T0, T)
@@ -208,8 +212,8 @@ class LoopSolver():
 
         n_endjoints = len(self.chains)
         from  serialmechanism import n_pjoints
-        n_pjoints = n_pjoints(l_from_l_of_l(self.pjoints))
-        J = zeros((6 * (n_endjoints - 1), n_pjoints))
+        n_pjnts = n_pjoints(l_from_l_of_l(self.pjoints))
+        J = zeros((6 * n_endjoints, n_pjnts))
 
         # Put J0 more times in the first columns.
         J0 = jacobian(self.chains[0])
@@ -241,7 +245,7 @@ class LoopSolver():
         dpos_min = 1e-5
 
         for k in range(kmax):
-            print('Initial values set number: {}/{}'.format(k, kmax))
+            print('Initial values set number: {0}/{1}'.format(k, kmax))
             # Use joint.qinit the first attempt. If the attempt fails, try
             # with random values.
             if (k > 1):
@@ -257,6 +261,5 @@ class LoopSolver():
                 # (dx/2), sinon but pour nouveau X0 c'est atteindre ancien X1
                 # et inversement, alors qu'il faudrait avoir but pour nouveau
                 # X0 c'est atteindre nouveau X1.
-                dq = ((J.transpose() * J) ** -1) * J.transpose() * dx
+                dq = ((J.T * J) ** -1) * J.T * dx
                 self.set_dq_pjoints(dq)
-

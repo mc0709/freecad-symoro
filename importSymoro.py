@@ -26,7 +26,8 @@ __author__ = "Gael Ecorchard <galou_breizh@yahoo.fr>"
 __url__ = ["http://free-cad.sourceforge.net"]
 
 import FreeCAD
-from FreeCAD import Base, Part
+from FreeCAD import Base
+import Part
 from kinematics import Kinematics
 
 from robots import table_sr400 as table
@@ -38,10 +39,12 @@ d_prism = 20
 l_prism = 200
 d_body = 5
 
+
 class Mechanism():
     def __init__(self, feature):
         self.kinematics = Kinematics(table)
-        self.qstr = ['q{0}'.format(i+1) for i in range(len(self.kinematics.ajoints))]
+        self.qstr = ['q{0}'.format(i + 1) for i in range(
+            len(self.kinematics.ajoints))]
         add_rev = lambda s: feature.addProperty("App::PropertyAngle",
                 s, "Joint Values", s)
         add_prism = lambda s: feature.addProperty("App::PropertyDistance",
@@ -96,11 +99,10 @@ class Mechanism():
 doc = FreeCAD.activeDocument()
 if doc == None:
     doc = FreeCAD.newDocument()
-mechanism = doc.addObject("Part::FeaturePython","Mechanism")
+mechanism = doc.addObject("Part::FeaturePython", "Mechanism")
 mechanism.Label = "Mechanism"
 Mechanism(mechanism)
 mechanism.ViewObject.Proxy = 0
 doc.recompute()
 import FreeCADGui as Gui
 Gui.SendMsgToActiveView("ViewFit")
-
