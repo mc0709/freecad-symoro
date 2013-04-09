@@ -32,6 +32,8 @@ table_tree = (
         0, 0, 0, 100, pi / 2, 0),
     )
 
+D3 = 300
+RL4 = 400
 table_rx90 = (
     # antecedant, sameas, mu, sigma,
     #   gamma, b, alpha, d, theta, r

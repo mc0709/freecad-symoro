@@ -54,6 +54,7 @@ def get_joints_from_table(table):
             antc = None
         else:
             antc = joints[row[0] - 1]
+        # TODO: redefine sameas by starting with index 0 (-1 <=> None)
         if (row[1] == 0):
             sameas = None
         else:
@@ -143,6 +144,7 @@ class Kinematics():
         from loop_solver import LoopSolver
         self.loopsolvers = [LoopSolver(self.joints, *l) for l in self.loops]
 
+    # TODO: ajoints as property
     def get_ajoints(self):
         """Return the list of active joints, always in the same order"""
         ajoints = []
@@ -151,6 +153,7 @@ class Kinematics():
                 ajoints.append(jnt)
         return ajoints
 
+    # TODO: pjoints as property
     def get_pjoints(self):
         """Return the list of passive joints, always in the same order"""
         pjoints = []
@@ -159,6 +162,7 @@ class Kinematics():
                 pjoints.append(jnt)
         return pjoints
 
+    # TODO: cjoints as property
     def get_cjoints(self):
         """Return the list of cut joints, always in the same order"""
         cjoints = []
@@ -166,12 +170,14 @@ class Kinematics():
             if not(jnt.sameas is None):
                 cjoints.append(jnt)
 
+    # TODO: define q as property
     def get_q(self, index=None):
         if (index is None):
             return [jnt.q for jnt in self.ajoints]
         else:
             return self.ajoints[index].q
 
+    # TODO: define qp as property
     def get_qp(self, index=None):
         if (index is None):
             return [jnt.q for jnt in self.pjoints]
