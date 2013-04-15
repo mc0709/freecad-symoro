@@ -40,21 +40,8 @@ def input_new(name):
     return v
 
 
-def add_type(cls, t):
-    """Add a token type"""
-    from ply.lex import TOKEN
-
-    @TOKEN(r'\b' + t + r'\b')
-    def t_type(t):
-        return t
-    t_type.__name__ = 't_' + t
-    setattr(cls, t_type.__name__, t_type)
-
-
 class ParLexer(object):
     def __init__(self, **kwargs):
-        for k in self.keywords:
-            add_type(self, k)
         self.lexer = lex.lex(module=self, **kwargs)
         self.lookup = {}
 
@@ -71,9 +58,8 @@ class ParLexer(object):
             ]
 
     tokens = [
-            'COMMENT',
-            'NAME','INTEGER', 'FLOAT', 'Pi',
-            ] + keywords
+            'COMMENT', 'NAME', 'KEYWORD', 'INTEGER', 'FLOAT', 'Pi',
+            ]
 
     literals = ['=','+','-','*','/', '(', ')', '{', '}', ',']
 
@@ -82,6 +68,12 @@ class ParLexer(object):
     def t_COMMENT(self, t):
         r'\(\*.*'
         pass
+
+    _keyword_pattern = '|'.join([r'\b' + k + r'\b' for k in keywords])
+    from ply.lex import TOKEN
+    @TOKEN(_keyword_pattern)
+    def t_KEYWORD(self, t):
+        return t
 
     def t_Pi(self, t):
         r'\bPi\b'
@@ -100,7 +92,6 @@ class ParLexer(object):
         t.value = int(t.value)
         return t
 
-    # TODO: recognize NAME as NAME and not KEYWORD inside {}
     def t_NAME(self, t):
         r'[a-zA-Z_][a-zA-Z0-9_]*'
         try:
@@ -170,7 +161,7 @@ class ParParser:
         self.robot_definition[p[0]] = p[3]
 
     def p_keyword(self, p):
-        """keyword :"""
+        """keyword : """
         pass
 
     def p_paramlist(self, p):
@@ -189,3 +180,5 @@ if __name__ == '__main__':
 
     #parser = ParParser()
     #parser.parse(rx90_geom)
+
+
