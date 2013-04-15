@@ -63,7 +63,19 @@ class ParLexer(object):
 
     literals = ['=','+','-','*','/', '(', ')', '{', '}', ',']
 
+    states = (
+        ('paramlist', 'inclusive'),
+    )
+
     t_ignore = " \t\r"
+
+    def t_begin_paramlist(self, t):
+        r'\{'
+        t.lexer.push_state('paramlist')
+
+    def t_end_paramlist(self, t):
+        r'\}'
+        t.lexer.pop_state()
 
     def t_COMMENT(self, t):
         r'\(\*.*'
@@ -74,6 +86,10 @@ class ParLexer(object):
     @TOKEN(_keyword_pattern)
     def t_KEYWORD(self, t):
         return t
+
+    @TOKEN(_keyword_pattern)
+    def t_paramlist_KEYWORD(self, t):
+        return self.t_NAME(t)
 
     def t_Pi(self, t):
         r'\bPi\b'
