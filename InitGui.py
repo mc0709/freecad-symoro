@@ -29,6 +29,7 @@ import os
 
 class SymoroWorkbench(Workbench):
     "The Symoro Workbench"
+    # TODO: change icon
     Icon = """
         /* XPM */
         static char * draft_xpm[] = {

@@ -30,7 +30,7 @@ from FreeCAD import Base
 import Part
 from kinematics import Kinematics
 
-from robots import table_sr400 as table
+from robots import table_rx90 as table
 
 # Parameters for the graphical representation
 d_rev = 20
@@ -76,6 +76,7 @@ class Mechanism():
             jnt.q = q
 
     def createShape(self, feature):
+        # TODO: use real shapes
         comp = Part.Compound([])
         for jnt in self.kinematics.joints:
             m, Pjminus1 = self.kinematics.get_joint_transform(jnt)
@@ -93,14 +94,15 @@ class Mechanism():
             if not(jnt.isfixed()):
                 joint_shape.Matrix = m
                 comp.add(joint_shape)
-            Pjminus1 = Pj
+            # TODO: add the frame for each joint and add a property to switch
+            # frame display on/off.
         feature.Shape = comp
 
 doc = FreeCAD.activeDocument()
 if doc == None:
     doc = FreeCAD.newDocument()
 mechanism = doc.addObject("Part::FeaturePython", "Mechanism")
-mechanism.Label = "Mechanism"
+mechanism.Label = "Robot"
 Mechanism(mechanism)
 mechanism.ViewObject.Proxy = 0
 doc.recompute()

@@ -27,6 +27,9 @@ __url__ = ["http://free-cad.sourceforge.net"]
 
 import ply.lex as lex
 import ply.yacc as yacc
+from joint import REVOLUTE_JOINT, PRISMATIC_JOINT, FIXED_JOINT
+from joint import PASSIVE_JOINT as PJOINT
+from joint import ACTUATED_JOINT as AJOINT
 
 
 def input_new(name):
@@ -227,17 +230,26 @@ class ParParser(object):
         print p
         print
 
-if __name__ == '__main__':
-    with open('RX90_geom.par', 'r') as f:
-        rx90_geom = f.read()
 
-    #parlexer = ParLexer()
-    #parlexer.lexer.input(rx90_geom)
-    #for tok in parlexer.lexer:
-    #    print(tok)
-
+def par_reader(fname):
+    """Return a description table from a Symoro+ robot description file"""
+    robot_name = 'robot'
+    with open(fname, 'r') as f:
+        par_content = f.read()
+        f.seek(0)
+        for l in f.readlines():
+            import re
+            match = re.match(r'^\(\* Robotname = \'(.*)\' \*\)', l)
+            if match:
+                robot_name = match.group(1)
+    robot_name = ''.join([c if c.isalnum() else '_' for c in robot_name])
+    if robot_name[0].isdigit():
+        robot_name = '_' + robot_name
     parser = ParParser()
-    parser.parse(rx90_geom)
-    print parser.robot_definition
+    parser.parse(par_content)
+    robdef = parser.robot_definition
 
-
+    # antecedant, sameas, mu, sigma,
+    #   gamma, b, alpha, d, theta, r
+    for i in range(NJ):
+        pass
