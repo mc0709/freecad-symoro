@@ -257,7 +257,8 @@ class LoopSolver():
                 if (abs(dpos).max() < dpos_min):
                     return
                 J = self.get_cjoint_jac()
-                # TODO: demander a Wisama s'il ne serait pas mieux de prendre
+                # TODO: study the use of (dx/2) instead of dx.
+                # Demander a Wisama s'il ne serait pas mieux de prendre
                 # (dx/2), sinon but pour nouveau X0 c'est atteindre ancien X1
                 # et inversement, alors qu'il faudrait avoir but pour nouveau
                 # X0 c'est atteindre nouveau X1.
