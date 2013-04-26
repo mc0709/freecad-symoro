@@ -33,7 +33,7 @@ def input_new(name):
     while True:
         try:
             #v = float(raw_input('Value for "' + name + '": '))
-            v = 0
+            v = 145245
         except ValueError:
             pass
         else:
@@ -60,27 +60,32 @@ class ParLexer(object):
 
     tokens = [
         'COMMENT', 'KEYWORD', 'INTEGER', 'FLOAT', 'Pi', 'NEWLINE',
+        'LBRACE',
+        'RBRACE',
         'NAME', 'JOINTVAR',
         ]
 
-    literals = ['=','+','-','*','/', '(', ')', '{', '}', ',']
+    literals = ['=','+','-','*','/', '(', ')', ',']
 
-    # TODO: use the state paramlist whithin which NEWLINE are ignored
-    # Problem with what is commented is that the brace used to detect state
-    # change are not output as  token.
-    #states = (
-    #    ('paramlist', 'inclusive'),
-    #)
+    # Many keywords are defined as brace-enclosed vectors (parameter list).
+    # Inside braces, NEWLINE are ignored.
+    states = (
+        ('paramlist', 'inclusive'),
+    )
 
     t_ignore = " \t\r"
 
-    #def t_begin_paramlist(self, t):
-    #    r'\{'
-    #    t.lexer.push_state('paramlist')
+    # TODO: propose a modification to the official to explain how to switch
+    # state AND return a token.
+    def t_LBRACE(self, t):
+        r'\{'
+        t.lexer.push_state('paramlist')
+        return t
 
-    #def t_end_paramlist(self, t):
-    #    r'\}'
-    #    t.lexer.pop_state()
+    def t_RBRACE(self, t):
+        r'\}'
+        t.lexer.pop_state()
+        return t
 
     def t_COMMENT(self, t):
         r'\(\*.*'
@@ -94,9 +99,9 @@ class ParLexer(object):
 
     # Within braces keywords are treated as names, though this is not supported
     # by Symoro+.
-    #@TOKEN(_keyword_pattern)
-    #def t_paramlist_KEYWORD(self, t):
-    #    return self.t_NAME(t)
+    @TOKEN(_keyword_pattern)
+    def t_paramlist_KEYWORD(self, t):
+        return self.t_NAME(t)
 
     def t_Pi(self, t):
         r'Pi'
@@ -105,18 +110,18 @@ class ParLexer(object):
         t.type = 'FLOAT'
         return t
 
+    def t_FLOAT(self, t):
+        r'[0-9]+[.eE]+[0-9eE]*'
+        t.value = float(t.value)
+        return t
+
     def t_INTEGER(self, t):
         r'\d+'
         t.value = int(t.value)
         return t
 
-    def t_FLOAT(self, t):
-        r'[0-9.eE]+'
-        t.value = float(t.value)
-        return t
-
     def t_JOINTVAR(self, t):
-        r'q[0-9]*'
+        r'q[0-9]*\b'
         t.value = 0
         t.type = 'FLOAT'
         return t
@@ -132,14 +137,16 @@ class ParLexer(object):
         t.type = 'FLOAT'
         return t
 
+    # NEWLINE are needed to mark the end of an assignment.
     def t_NEWLINE(self, t):
         r'[\n]+'
         t.lexer.lineno += t.value.count("\n")
         return t
 
-    #def t_paramlist_NEWLINE(self, t):
-    #    r'[\n]+'
-    #    t.lexer.lineno += t.value.count("\n")
+    # NEWLINE are ignored within parameter lists.
+    def t_paramlist_NEWLINE(self, t):
+        r'[\n]+'
+        t.lexer.lineno += t.value.count("\n")
 
     def t_error(self, t):
         print("Illegal character '%s'" % t.value[0])
@@ -157,7 +164,6 @@ class ParParser(object):
 
     def parse(self, data):
         if data:
-            #return self.parser.parse(data, self.lexer.lexer, 0, 0, None)
             return self.parser.parse(data, self.lexer.lexer,
                     False, 0, None)
         else:
@@ -175,6 +181,8 @@ class ParParser(object):
                 | input line"""
         pass
 
+    # TODO: propose a modification to the official documentation to explain how
+    # to deal with newlines in input.
     def p_line(self, p):
         """line : assignment NEWLINE
                 | NEWLINE"""
@@ -182,8 +190,8 @@ class ParParser(object):
 
     def p_assignment(self, p):
         """assignment : KEYWORD '=' param
-                      | KEYWORD '=' '{' paramlist '}'"""
-        print('in p_assignment, p = {}'.format(list(p)))
+                      | KEYWORD '=' LBRACE paramlist RBRACE"""
+        #print('in p_assignment, p = {}'.format(list(p)))
         if len(p) == 4:
             # assignment : KEYWORD '=' param
             self.robot_definition[p[1]] = p[3]
@@ -192,28 +200,20 @@ class ParParser(object):
             self.robot_definition[p[1]] = p[4]
 
     def p_paramlist(self, p):
-        """paramlist : paramlist ',' param
-                       | NEWLINE paramlist ',' param
-                       | param
-                       | NEWLINE param"""
-        print('in p_paramlist, p = {}'.format(list(p)))
+        """paramlist : param
+                     | param ',' paramlist"""
+        #print('in p_paramlist, p = {}'.format(list(p)))
         if len(p) == 2:
             # paramlist : param
             p[0] = [p[1]]
-        elif len(p) == 3:
-            # paramlist : NEWLINE param
-            p[0] = [p[2]]
         elif len(p) == 4:
-            # paramlist : paramlist ',' param
-            p[0] = p[1] + [p[3]]
-        elif len(p) == 5:
-            # paramlist : NEWLINE paramlist ',' param
-            p[0] = p[2] + [p[4]]
+            # paramlist : param ',' paramlist
+            p[0] = [p[1]] + p[3]
 
     def p_param(self, p):
         """param : expression
                  | '(' expression ')'"""
-        print('in p_param, p = {}'.format(list(p)))
+        #print('in p_param, p = {}'.format(list(p)))
         index = 1 if len(p) == 2 else 2
         p[0] = p[index]
 
@@ -222,7 +222,7 @@ class ParParser(object):
                     | expression '-' expression
                     | expression '*' expression
                     | expression '/' expression"""
-        print('in p_expression_binop, p = {}'.format(list(p)))
+        #print('in p_expression_binop, p = {}'.format(list(p)))
         if p[2] == '+'  :
             p[0] = p[1] + p[3]
         elif p[2] == '-':
@@ -236,15 +236,16 @@ class ParParser(object):
 
     def p_expression_uminus(self, p):
         """expression : '-' expression %prec UMINUS"""
-        print('in p_expression_uminus, p = {}'.format(list(p)))
+        #print('in p_expression_uminus, p = {}'.format(list(p)))
         p[0] = -p[2]
 
     def p_expression_term(self, p):
-        """expression : NAME
-                    | INTEGER
+        """expression : INTEGER
                     | FLOAT
-                    | Pi"""
-        print('in p_expression_term, p = {}'.format(list(p)))
+                    | Pi
+                    | NAME
+                    | JOINTVAR"""
+        #print('in p_expression_term, p = {}'.format(list(p)))
         p[0] = p[1]
 
     def p_error(self, p):
@@ -292,4 +293,7 @@ def par_reader(fname):
             robdef['Theta'][i],
             robdef['R'][i],
         ))
-    return robot_name, robdef
+    # TODO: if there is a passive joint, ask the user to set the sameas field
+    # Indeed, in this case, we have a closed-loop mechanism, we need
+    # information about where the loops are.
+    return robot_name, table
