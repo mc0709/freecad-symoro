@@ -27,9 +27,6 @@ __url__ = ["http://free-cad.sourceforge.net"]
 
 import ply.lex as lex
 import ply.yacc as yacc
-from joint import REVOLUTE_JOINT, PRISMATIC_JOINT, FIXED_JOINT
-from joint import PASSIVE_JOINT as PJOINT
-from joint import ACTUATED_JOINT as AJOINT
 
 
 def input_new(name):
@@ -50,23 +47,27 @@ class ParLexer(object):
         self.lookup = {}
 
     keywords = [
-            'NF', 'NL', 'NJ', 'Type',
-            'Ant', 'Sigma', 'B', 'd', 'R',
-            'gamma', 'Alpha', 'Mu', 'Theta',
-            'XX', 'XY', 'XZ', 'YY', 'YZ', 'ZZ',
-            'MX', 'MY', 'MZ', 'M',
-            'IA', 'FV', 'FS', 'FX', 'FY', 'FZ',
-            'CX', 'CY', 'CZ', 'QP', 'QDP',
-            'W0', 'WP0', 'V0', 'VP0',
-            'Z', 'G',
-            ]
+        'NF', 'NL', 'NJ', 'Type',
+        'Ant', 'Sigma', 'B', 'd', 'R',
+        'gamma', 'Alpha', 'Mu', 'Theta',
+        'XX', 'XY', 'XZ', 'YY', 'YZ', 'ZZ',
+        'MX', 'MY', 'MZ', 'M',
+        'IA', 'FV', 'FS', 'FX', 'FY', 'FZ',
+        'CX', 'CY', 'CZ', 'QP', 'QDP',
+        'W0', 'WP0', 'V0', 'VP0',
+        'Z', 'G',
+        ]
 
     tokens = [
-            'COMMENT', 'KEYWORD', 'NUMBER', 'Pi', 'NEWLINE', 'NAME',
-            ]
+        'COMMENT', 'KEYWORD', 'INTEGER', 'FLOAT', 'Pi', 'NEWLINE',
+        'NAME', 'JOINTVAR',
+        ]
 
     literals = ['=','+','-','*','/', '(', ')', '{', '}', ',']
 
+    # TODO: use the state paramlist whithin which NEWLINE are ignored
+    # Problem with what is commented is that the brace used to detect state
+    # change are not output as  token.
     #states = (
     #    ('paramlist', 'inclusive'),
     #)
@@ -98,15 +99,26 @@ class ParLexer(object):
     #    return self.t_NAME(t)
 
     def t_Pi(self, t):
-        r'\bPi\b'
+        r'Pi'
         from math import pi
         t.value = pi
-        t.type = 'NUMBER'
+        t.type = 'FLOAT'
         return t
 
-    def t_NUMBER(self, t):
+    def t_INTEGER(self, t):
+        r'\d+'
+        t.value = int(t.value)
+        return t
+
+    def t_FLOAT(self, t):
         r'[0-9.eE]+'
         t.value = float(t.value)
+        return t
+
+    def t_JOINTVAR(self, t):
+        r'q[0-9]*'
+        t.value = 0
+        t.type = 'FLOAT'
         return t
 
     def t_NAME(self, t):
@@ -117,7 +129,7 @@ class ParLexer(object):
             val = input_new(t.value)
             self.lookup[t.value] = val
             t.value = val
-        t.type = 'NUMBER'
+        t.type = 'FLOAT'
         return t
 
     def t_NEWLINE(self, t):
@@ -170,24 +182,33 @@ class ParParser(object):
 
     def p_assignment(self, p):
         """assignment : KEYWORD '=' param
-                      | KEYWORD '=' '{' NEWLINE paramlist '}'"""
+                      | KEYWORD '=' '{' paramlist '}'"""
         print('in p_assignment, p = {}'.format(list(p)))
         if len(p) == 4:
             # assignment : KEYWORD '=' param
             self.robot_definition[p[1]] = p[3]
         else:
-            # assignment : KEYWORD '=' '{' NEWLINE paramlist '}'
-            self.robot_definition[p[1]] = p[5]
+            # assignment : KEYWORD '=' '{' paramlist '}'
+            self.robot_definition[p[1]] = p[4]
 
     def p_paramlist(self, p):
         """paramlist : paramlist ',' param
-                       | param"""
+                       | NEWLINE paramlist ',' param
+                       | param
+                       | NEWLINE param"""
         print('in p_paramlist, p = {}'.format(list(p)))
-        if len(p) == 4:
+        if len(p) == 2:
+            # paramlist : param
+            p[0] = [p[1]]
+        elif len(p) == 3:
+            # paramlist : NEWLINE param
+            p[0] = [p[2]]
+        elif len(p) == 4:
             # paramlist : paramlist ',' param
             p[0] = p[1] + [p[3]]
-        else:
-            p[0] = [p[1]]
+        elif len(p) == 5:
+            # paramlist : NEWLINE paramlist ',' param
+            p[0] = p[2] + [p[4]]
 
     def p_param(self, p):
         """param : expression
@@ -220,7 +241,8 @@ class ParParser(object):
 
     def p_expression_term(self, p):
         """expression : NAME
-                    | NUMBER
+                    | INTEGER
+                    | FLOAT
                     | Pi"""
         print('in p_expression_term, p = {}'.format(list(p)))
         p[0] = p[1]
@@ -229,6 +251,13 @@ class ParParser(object):
         print 'Error!'
         print p
         print
+
+
+def _get_varname(name='robot'):
+    name = ''.join([c if c.isalnum() else '_' for c in name])
+    if name[0].isdigit():
+        name = '_' + name
+    return name
 
 
 def par_reader(fname):
@@ -242,14 +271,25 @@ def par_reader(fname):
             match = re.match(r'^\(\* Robotname = \'(.*)\' \*\)', l)
             if match:
                 robot_name = match.group(1)
-    robot_name = ''.join([c if c.isalnum() else '_' for c in robot_name])
-    if robot_name[0].isdigit():
-        robot_name = '_' + robot_name
+    robot_name = _get_varname(robot_name)
     parser = ParParser()
     parser.parse(par_content)
     robdef = parser.robot_definition
 
+    table = []
     # antecedant, sameas, mu, sigma,
     #   gamma, b, alpha, d, theta, r
-    for i in range(NJ):
-        pass
+    for i in range(robdef['NJ']):
+        table.append((
+            robdef['Ant'][i],
+            0,
+            robdef['Mu'][i],
+            robdef['Sigma'][i],
+            robdef['gamma'][i],
+            robdef['B'][i],
+            robdef['Alpha'][i],
+            robdef['d'][i],
+            robdef['Theta'][i],
+            robdef['R'][i],
+        ))
+    return robot_name, robdef
