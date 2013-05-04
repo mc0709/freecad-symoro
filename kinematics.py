@@ -174,6 +174,7 @@ class Kinematics():
 
     # TODO: define q as property
     def get_q(self, index=None):
+        """Returns the list of joint variables of active joints"""
         if (index is None):
             return [jnt.q for jnt in self.ajoints]
         else:
@@ -181,6 +182,7 @@ class Kinematics():
 
     # TODO: define qp as property
     def get_qp(self, index=None):
+        """Returns the list of joint variables of passive joints"""
         if (index is None):
             return [jnt.q for jnt in self.pjoints]
         else:
