@@ -34,6 +34,8 @@ s6 = sin(q5)
 c23 = cos(q1 + q2)
 s23 = sin(q1 + q2)
 
+print("\n");
+
 # TODO: get D3 and RL4 from table_rx90
 D3 = 300
 RL4 = 400
@@ -43,3 +45,15 @@ J63_Khalil = matrix([[0, -RL4 + s3 * D3, -RL4, 0, 0, 0],
     [s23, 0, 0, 0, s4, -s5 * c4],
     [c23, 0, 0, 1, 0, c5],
     [0, 1, 1, 0, c4, s5 * s4]])
+print (J63_Khalil)
+print("\n");
+
+D3 = table_rx90[2][7]
+RL4 = table_rx90[3][9]
+J63_Khalil = matrix([[0, -RL4 + s3 * D3, -RL4, 0, 0, 0],
+    [0, c3 * D3, 0, 0, 0, 0],
+    [s23 * RL4 - c2 * D3, 0, 0, 0, 0, 0],
+    [s23, 0, 0, 0, s4, -s5 * c4],
+    [c23, 0, 0, 1, 0, c5],
+    [0, 1, 1, 0, c4, s5 * s4]])
+print (J63_Khalil)
