@@ -5,36 +5,39 @@ def get_base(joints):
     """Return the base joint, i.e. joints without antecedant"""
     base = None
     for jnt in joints:
-        if not(jnt.antc in joints):
+        if not(jnt.antc in joints):		#MATT: if antecedant is not in the joint list ==> base joint
             base = jnt
     return base
 
 def get_tools(joints):
     """Return the end joints, i.e. joints that are antecedant of nothing"""
-    antc = [jnt.antc for jnt in joints]
+    antc = [jnt.antc for jnt in joints]	#MATT: list of antecedents
     # A joint is an end joint if is antecedant of no other joints.
-    tools = [jnt for jnt in joints if not(jnt in antc)]
+    tools = [jnt for jnt in joints if not(jnt in antc)]		#MATT: for each joint, if it is not in the antecedant list ==> end effector
     return tools
 
 def get_children(joints, joint):
     """Return a list of joints which have the given joint as antecedant"""
-    return [jnt for jnt in joints if (jnt.antc is joint)]
+    return [jnt for jnt in joints if (jnt.antc is joint)]	#MATT: list of branches from joint
 
 def is_unique_child(joint, joints):
     """Return True is no other joint has the same antecedant"""
-    antc = [jnt.antc for jnt in joints]
-    return (antc.count(joint.antc) == 1)
+    antc = [jnt.antc for jnt in joints]		#MATT: list of antecedants
+    return (antc.count(joint.antc) == 1)	#MATT: counts number of times joint.antc occurs in the list
+											#if 1, then the joint is not a branch of its antecedant
 
+#MATT: function is recursive. list starts from the base to the endeffector
 def get_subchain_to(joint, joints):
     """Return the subchain ending at joint"""
-    if not(joint.antc in joints):
+    if not(joint.antc in joints):	
         return [joint]
     l = []
-    l.extend(get_subchain_to(joint=joint.antc, joints=joints))
+    l.extend(get_subchain_to(joint=joint.antc, joints=joints))	#MATT: recursion
     l.append(joint)
     return l
 
 class Chain(object):
+	#M: constructor: sets up the properties joints, base and tools
     def __init__(self, joints):
         self.joints = joints
         self._base = get_base(joints)
@@ -52,14 +55,16 @@ class Chain(object):
         """The end joints, i.e. joints that are antecedant of nothing"""
         return self._tools
 
+	#M: recursive function
     def get_subchain_from(self, joint):
         """Return the subchain starting at joint"""
-        subjnts = get_children(self.joints, joint)
+        subjnts = get_children(self.joints, joint)	#MATT: check how many joints are next
         if (len(subjnts) == 0):
-            return [joint]
+            return [joint]			#M: end effector
         elif (len(subjnts) == 1):
-            return [joint] + self.get_subchain_from(subjnts[0])
+            return [joint] + self.get_subchain_from(subjnts[0])	#M: serial chain: current joint + subchain from next joint
         else:
+			#M: in the case of braches, list section is defined as [common joint, branch1, branch2, ..]
             l = [joint]
             l.append([self.get_subchain_from(jnt) for jnt in subjnts])
             return l
@@ -68,6 +73,7 @@ class Chain(object):
         """Return the subchain ending at joint"""
         return get_subchain_to(joint=joint, joints=self.joints)
 
+	#M: defines entire robot as one chain from the base
     def get_chain(self):
         return self.get_subchain_from(self.base)
 
