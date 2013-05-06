@@ -34,14 +34,14 @@ def table_ok(table):
     # which is the first element in a joint description of the table
     # notation.
     cmp_antc = lambda j1, j2: cmp(j1[0], j2[0])
-    sorted_table = sorted(table, cmp=cmp_antc)
-    return (sorted_table == list(table))
+    sorted_table = sorted(table, cmp=cmp_antc)  #I: returns sorted table according to its antecedant
+    return (sorted_table == list(table))        #I: Checks if current table is sorted
 
 
 def Ttomatrix(T):
     # TODO: remove FreeCAD dependency from this module
     from FreeCAD import Base
-    l = T.flatten().tolist()
+    l = T.flatten().tolist()                    #I: flatten converts a matrix into an array and then it is converted into a list
     return Base.Matrix(*l)
 
 
@@ -88,6 +88,7 @@ def get_looproot(joints, joint):
     subchain1 = chain.get_subchain_to(joint)
     subchain2 = chain.get_subchain_to(joint.sameas)
 
+    #I: returns the first common antecedant for both loops
     for jnt in subchain2[::-1]:
         if (jnt in subchain1):
             return jnt
@@ -95,6 +96,7 @@ def get_looproot(joints, joint):
 
 
 def get_loops(joints):
+    """I: Returns a list of tuples with roots and ends (cut joints) of loops"""
     ends = []
     roots = []
     for jnt in joints:
@@ -172,6 +174,7 @@ class Kinematics():
 
     # TODO: define q as property
     def get_q(self, index=None):
+        """Returns the list of joint variables of active joints"""
         if (index is None):
             return [jnt.q for jnt in self.ajoints]
         else:
@@ -179,6 +182,7 @@ class Kinematics():
 
     # TODO: define qp as property
     def get_qp(self, index=None):
+        """Returns the list of joint variables of passive joints"""
         if (index is None):
             return [jnt.q for jnt in self.pjoints]
         else:

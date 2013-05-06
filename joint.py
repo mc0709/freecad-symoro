@@ -119,6 +119,7 @@ class Joint(object):
 
     @qmin.setter
     def qmin(self, value):
+        """I: Assign value to qmin and make sure that q >= value and value <= qmax"""
         if (value is None):
             self._qmin = None
             return
@@ -135,6 +136,7 @@ class Joint(object):
 
     @qmax.setter
     def qmax(self, value):
+        """I: Assign value to qmax and make sure that q <= value and value >= qmin"""
         if (value is None):
             self._qmax = None
             return
@@ -145,6 +147,7 @@ class Joint(object):
             self.q = value
 
     def __str__(self):
+        """I: Print joint number while called print for an object"""
         return str(self.j)
 
     def isrevolute(self):
