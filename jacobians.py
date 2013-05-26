@@ -44,17 +44,17 @@ def serialKinematicJacobian(joints):
     Pend = Tend[0:3, 3]
 
     from numpy.matlib import zeros, identity, cross
-	#M: jacobian only includes moving joints
+	# jacobian only includes moving joints
     jacobian = zeros((6, len(chain.get_mjoints())))
     T = identity(4)
     k = 0
     for jnt in chain.joints:
         T *= jnt.T
-		#M: Take P and a vectors
+		# Take P and a vectors
         P = T[0:3, 3]
         a = T[0:3, 2]
         if jnt.isrevolute():
-			#M: revolute: [ahat*(Pend-P), a]
+			# revolute: [ahat*(Pend-P), a]
             DP = Pend - P
             a_hat = zeros((3,3))
             a_hat[0, 1] = -a[2]
@@ -67,10 +67,10 @@ def serialKinematicJacobian(joints):
             #jacobian_trans = cross(P, DP, axis=0)
             jacobian_rot = a
         if jnt.isprismatic():
-			#M: prismatic: [a, 0]
+			# prismatic: [a, 0]
             jacobian_trans = a
             jacobian_rot = zeros((3, 1))
-		#M: skip fixed joints
+		# skip fixed joints
         if not(jnt.isfixed()):
             jacobian[:3, k] = jacobian_trans
             jacobian[3:, k] = jacobian_rot
