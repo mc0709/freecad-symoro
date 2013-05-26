@@ -112,6 +112,7 @@ class LoopSolver():
         self.ajoints = self.get_ajoints()
         self.pjoints = self.get_pjoints()
 
+	#ASK!!!
     def root_ok(self):
         """Check that the root is opening the loop"""
         return True
@@ -121,12 +122,19 @@ class LoopSolver():
         # TODO: also allow that self.end has attribute sameas not None by
         # finding the joint which has sameas equal to the given end.
         if not(self.end.sameas is None):
-            return False
-        check_ok = False
-        for jnt in self.joints:
-            if (jnt.sameas is self.end):
-                check_ok = True
-                break
+			# Check if end.sameas corresponds to a joint with sameas pointing towards it
+	        check_ok = False
+	        for jnt in self.joints:
+	            if (jnt is self.end.sameas) and (jnt.sameas is self.end):
+	                check_ok = True
+	                break
+		else:
+			# if end.sameas is None... check that it has a sameas from another joint
+	        check_ok = False
+	        for jnt in self.joints:
+	            if (jnt.sameas is self.end):
+	                check_ok = True
+	                break
         # TODO: put this check somewhere else
         for jnt in self.joints:
             if (not(jnt.sameas is None) and
@@ -135,6 +143,7 @@ class LoopSolver():
         return check_ok
 
     def get_end_joints(self):
+		#ASK!
         """Return the list of self.end and all joints with sameas == end."""
         l = ([self.end] +
                 [jnt for jnt in self.joints if jnt.sameas is self.end])
@@ -214,8 +223,14 @@ class LoopSolver():
         from  serialmechanism import n_pjoints
         n_pjnts = n_pjoints(l_from_l_of_l(self.pjoints))
         J = zeros((6 * n_endjoints, n_pjnts))
+		# J = [J0 -J1  0  ...
+		#	   J0  0  -J2 ...
+		#			...
+		#	   J0  0  ...    -Jb]
 
         # Put J0 more times in the first columns.
+		# J0 = jacobian for main branch
+		# n_points0 = number of passive joints in main branch
         J0 = jacobian(self.chains[0])
         n_pjoints0 = J0.shape[1]
         for i in range(n_endjoints - 1):
@@ -225,7 +240,7 @@ class LoopSolver():
         # of J.
         np = n_pjoints0
         for i in range(1, n_endjoints):
-            npi = len(self.chains[i])
+			npi = n_pjoints(self.chains[i])
             Ji = jacobian(self.chains[i])
             J[(6 * i):(6 * i + 6), np:(np + npi)] = -Ji
             np += npi
@@ -238,6 +253,14 @@ class LoopSolver():
             # TODO: remainder by 2 * pi and check limits.
             # Beware not to limit revolute joints if (q +/- 2*pi) would be
             # within the limits.
+			if ((jnt.q < jnt.qmin) or (jnt.q > jnt.qmax)) and (jnt.isrevolute()):
+				from numpy.matlib import atan2, sin, cos
+				jnt.q = atan2(sin(jnt.q),cos(jnt.q))
+			if (jnt.q < jnt.qmin):
+				jnt.q = jnt.qmin
+			elif (jnt.q > jnt.qmax):
+				jnt.q = jnt.qmax
+			
 
     def solve(self):
         kmax = 10

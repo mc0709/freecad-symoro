@@ -1,0 +1,12 @@
+TODO list
+
+more or less in the order of priorities. Non exhaustive.
+
+- Jacobian computation for serial links.
+- Loop-closure optimisation (correct Jacobian computation compulsary).
+- Add frames of the Khalil-Kleinfinger description with a property in the
+  "View" tab to switch them on/off.
+- Use real shapes for the graphical representation with a property in the
+  "View" tab to switch  between real shapes and schematic representation.
+- Solve TODOs inside the code.
+- Improve comments and code quality.
